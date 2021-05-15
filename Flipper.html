@@ -1,0 +1,503 @@
+<HTML>
+<H1>Auction data</h1>
+<p id="LoadBar">0%</p>
+<p id="text"> </p>
+
+<div id="info"> </div>
+<script  src="Math.js"></script>
+<script  src="Regressor.js"></script>
+<script>
+
+var a = 0;
+var pages = 10;
+var Items = [];
+var Priority = [];
+var done = false;
+var flipData = [];
+getPage();
+
+function run() {
+
+Priority.sort(function(a, b){return  b[0] - a[0]});
+Priority.splice(0, 1);
+console.table(flipData);
+console.table(Priority);
+        //Make everything look nice
+        console.log("Done");
+		console.log(Priority.length);
+        for (i = 0; i <= Priority.length - 1; i++) {
+            var para = document.createElement("p");
+            para.id = Priority[i][1];
+			console.log(i);
+            var node = document.createTextNode(flipData[Priority[i][1]][0][1][0].concat(" ",Priority[i][0]));                                   //Items[i][0][0].concat("  ", Items[i].length, )
+            para.appendChild(node);
+
+            var x = document.createElement("BUTTON"); // Create a <button> element
+            x.innerHTML = "Info";
+            x.type = "button";
+            x.id = Priority[i][1];
+            x.onclick = function() {
+                click(this);
+            };
+            para.appendChild(x);
+
+            var element = document.getElementById("info");
+            element.appendChild(para);
+        }
+}
+
+async function getPage() {
+    for (var p = 0; p <= 10; p = p + 1) { // 2 to pages
+		document.getElementById("LoadBar").innerHTML = Math.round(p/pages * 100);
+        var raw = await fetch("https://api.hypixel.net/skyblock/auctions?page=".concat(p));
+        var d = await raw.json();
+        console.log(d);
+        var Auc = d.auctions;
+        pages = d.totalPages;
+        var i = 0;
+
+        while (i < 1000) { //goes through auctions
+				
+            try { //try
+                var Item = Auc[i];
+				var iType = Item.category;
+				
+				
+                if (Auc[i].starting_bid > 1000000 && iType !== "misc" && iType !== "consumables" && Auc[i].bin === true) {
+
+					var Lore = Item.item_lore;
+					var recomm = 0;
+					var HPB = 0;
+					var iStar = 0;
+					var enchantWeight = 0;	
+					var uuid = Auc[i].auctioneer;
+					
+						//finds reforges
+					var iReforge = 0;
+                    var iName = Item.item_name;
+                    var reforgeMisc = ["Salty","Treacherous","Fruitful","Magnetic","Refined","Blessed","Moil","Toil","Fleet","Stellar","Mithraic","Auspicious","Gentle","Odd","Fast","Fair","Epic","Sharp","Heroic","Spicy","Legendary","Dirty","Fabled","Suspicious","Withered"]; //all reforges, sort by item type, misc has all weapons + tool
+                    var reforgeWeapon = ["Gentle","Odd","Fast","Fair","Epic","Sharp","Heroic","Spicy","Legendary","Dirty","Fabled","Suspicious","Gilded","Warped","Withered","Deadly","Fine","Grand","Hasty","Neat","Rapid","Unreal","Awkward","Rich","Precise","Spiritual","Headstrong"];
+                    var wrWeight = ["123", "321"]
+                    var reforgeArmor = ["Clean","Fierce","Heavy","Light","Mythic","Pure","Smart","Titanic","Wise","Perfect","Necrotic","Ancient","Spiked","Renowned","Cubic","Warped","Reinforced","Loving","Ridiculous","Giant","Submerged"];
+                    var reforgeAccessories = ["Bizarre","Itchy","Ominous","Pleasant","Pretty","Shiny","Simple","Strange","Vivid","Godly","Demonic","Forceful","Hurtful","Keen","Strong","Superior","Unpleasant","Zealous","Silky","Bloody","Shaded","Sweet"];
+
+                    //search exceptions   too much work nvm (useless too)
+
+                    
+                        
+                        
+
+                        if (iType === "weapon") {
+
+                            for (var z = 0, length = reforgeWeapon.length; z < length; z++) {
+                                var search = iName.search(reforgeWeapon[z]);
+                                if (search !== -1) {
+									iReforge = reforgeWeapon[z];
+                                    iName = iName.replace(reforgeWeapon[z].concat(" "), "");
+                                }
+                            }
+							//recomm
+							
+							if(Lore.search("§k") !== - 1){
+							recomm = 1;
+							}
+                        }
+
+                        if (iType === "misc") {
+
+                            for (var z = 0, length = reforgeMisc.length; z < length; z++) {
+                                var search = iName.search(reforgeMisc[z]);
+                                if (search !== -1) {
+									iReforge = reforgeMisc[z];
+                                    iName = iName.replace(reforgeMisc[z].concat(" "), "");
+                                }
+                            }
+                        }
+
+                        if (iType === "armor") {
+
+                            for (var z = 0, length = reforgeArmor.length; z < length; z++) {
+                                var search = iName.search(reforgeArmor[z]);
+                                if (search !== -1) {
+									iReforge = reforgeArmor[z];
+                                    iName = iName.replace(reforgeArmor[z].concat(" "), "");
+                                }
+                            }
+							//recomm
+							if(Lore.search("§k") !== - 1){
+							recomm = 1;
+							}
+                        }
+
+                        if (iType === "accessories") {
+
+                            for (var z = 0, length = reforgeAccessories.length; z < length; z++) {
+                                var search = iName.search(reforgeAccessories[z]);
+                                if (search !== -1) {
+									iReforge = reforgeAccessories[z];
+                                    iName = iName.replace(reforgeAccessories[z].concat(" "), "");
+                                }
+                            }
+							//recomm
+							if(Lore.search("§k") !== - 1){
+							recomm = 1;
+							}
+							
+                        }
+
+                    //Finds stars
+						var searchStar = iName.search("✪");
+						if(searchStar !== -1){
+							iName = iName.replace(" ✪","")
+							iStar = iStar + 1;
+							}  
+							
+								for(var y = 0; y<4;y++){
+									var searchStar = iName.search("✪");
+									if(searchStar !== -1){
+										iName = iName.replace("✪","");
+										iStar = iStar + 1;
+							
+						}}
+						
+						
+					//Enchanting + recom
+					
+					
+					var wVenchants = ["Syphon IV","Syphon V","Snipe IV","Life Steal V","First Strike V"];
+					var wVIenchants = ["Execute VI","Lethality VI","Prosecute VI","Infinite Quiver VI","Power VI","Sharpness VI","Giant Killer VI","Smite VI","Bane of Arthropods VI","Critical VI","Ender Slayer VI","Luck VI","Titan Killer VI","Cleave VI","Thunderbolt VI","Vampirism VI","Venomous VI","Cubism VI","Thunderlord VI"];
+					var wVIenchantsWeight = [2000,2000,2000,0,1500,1900,1600,200,0,250,1500,10,30,2000,2000,1300,2000,2000,0]
+					var aVIenchants = ["Feather Falling VI","Protection VI","Growth VI"];
+					var aVIenchantsWeight = [0, 3500,3500];
+					var eVIenchants = ["Caster VI"];
+					var VIIenchants = ["Feather Falling VII","Protection VII","Growth VII","Infinite Quiver VII","Power VII","Sharpness VII","Giant Killer VII","Smite VII","Bane of Arthropods VII","Critical VII","Ender Slayer VII","Luck VII","Titan Killer VII"];
+					var VIIenchantsWeight = [0,30000,30000,0,25000,28000,30000,25000,0,30000,7500,7500,7500]
+					var wUlts = ["Ultimate Wise","Swarm","Combo","Rend","Soul Eater","One For All","Ultimate Jerry","Chimera"];
+					var wUltsWeight = [150,650,70,525,1100,2200,25,120000];
+					var aUlts = ["Bank","Last Stand","Legion","No Pain No Gain","Wisdom"];
+					var aUltsWeight = [0,250,1000,0,140];
+					var iEnchants = [];
+					
+					
+					
+					if(true){
+						if(iType === "weapon"){ 
+						var VI = 0;
+						var VII = 0;
+						
+						
+							if(Lore.search("VII") !== -1){
+								var VII =  Lore.match(/(VII)/g).length;
+								var ii = 0;
+								
+									for(var f; f < VIIenchants.length; f++
+									){
+										
+										 var search = Lore.search(VIIenchants[ii]);
+                                if (search !== -1) {
+									iEnchants[iEnchants.length] = VIIenchants[ii];
+									enchantWeight += VIIenchantsWeight[ii];
+									wVIenchants.splice(ii, ii);
+									wVIenchantsWeight.splice(ii,ii);
+                                   
+                                }
+								ii = ii +1;
+								
+									}}
+							
+							if(Lore.search("VI") !== -1){
+								var VI = Lore.match(/(VI)/g).length - VII;
+								var ii = 0;
+								
+								for(var f; f < wVIenchants.length; f++
+								){
+						 var search = Lore.search(wVIenchants[ii]);
+                                if (search !== -1) {
+									iEnchants[iEnchants.length] = wVIenchants[ii];
+									enchantWeight += wVIenchantsWeight[ii];
+									}
+									ii = ii +1;}
+						
+					}
+					//Overload DH and the tier 5's
+					
+					//T5/4    not needed as thye are very rare 
+					
+					//Overload + DH
+					
+					OverBreaker :{if(Lore.search("Overload") !== -1){
+						
+							if(Lore.search("Overload III") !== -1){
+								iEnchants[iEnchants.length] = "Overload III";
+								enchantWeight += 2800;
+								break OverBreaker;
+							}
+							
+							if(Lore.search("Overload II") !== -1){
+								iEnchants[iEnchants.length] = "Overload II";
+								enchantWeight += 1400;
+								break OverBreaker;
+							}
+							
+							if(Lore.search("Overload I") !== -1){
+								iEnchants[iEnchants.length] = "Overload I";
+								enchantWeight += 700;
+								break OverBreaker;
+							}
+							
+							if(Lore.search("Overload V") !== -1){
+								iEnchants[iEnchants.length] = "Overload V";
+								enchantWeight += 11200;
+								break OverBreaker;
+							}
+							
+							if(Lore.search("Overload IV") !== -1){
+								iEnchants[iEnchants.length] = "Overload IV";
+								enchantWeight += 5600;
+								break OverBreaker;
+							}
+					}}
+					
+					DragonBreaker :{if(Lore.search("Dragon Hunter") !== -1){
+						
+							if(Lore.search("Dragon Hunter III") !== -1){
+								iEnchants[iEnchants.length] = "Dragon Hunter III";
+								enchantWeight += 4000;
+								break DragonBreaker;
+							}
+							
+							if(Lore.search("Dragon Hunter II") !== -1){
+								iEnchants[iEnchants.length] = "Dragon Hunter II";
+								enchantWeight += 2000;
+								break DragonBreaker;
+							}
+							
+							if(Lore.search("Dragon Hunter I") !== -1){
+								iEnchants[iEnchants.length] = "Dragon Hunter I";
+								enchantWeight += 1000;
+								break DragonBreaker;
+							}
+							
+							if(Lore.search("Dragon Hunter V") !== -1){
+								iEnchants[iEnchants.length] = "Dragon Hunter V";
+								enchantWeight += 16000;
+								break DragonBreaker;
+							}
+							
+							if(Lore.search("Dragon Hunter IV") !== -1){
+								iEnchants[iEnchants.length] = "Dragon Hunter IV";
+								enchantWeight += 8000;
+								break DragonBreaker;
+							}
+					}}
+					//Ultimate enchants
+												if(Lore.search("§d§l") !== -1){
+								var ii = 0;
+							
+								wUltBreaker:{
+									while(ii < 8){
+										var search = Lore.search(wUlts[ii]);
+										if (search !== -1) {
+											var UEname = wUlts[ii];
+											var UltNum = 0;
+											var ELength = UEname.length;
+												var UEdata = (Lore.substring(search+ELength+1,search+ELength+4).replace(",","").replace("§","").replace(" ",""))  //match reslut to weight array 
+														
+												if(UEdata === "IV"){ UltNum = 3;}
+												if(UEdata === "II"){ UltNum = 1;}
+												if(UEdata === "III"){ UltNum = 2;}
+												if(UEdata === "V"){ UltNum = 4;}
+												if(UEdata === "I"){ UltNum = 0;}
+												
+													enchantWeight += (Math.pow(2,UltNum))*wUltsWeight[ii];
+											iEnchants[iEnchants.length] = UEname.concat(" ",UEdata);
+											break wUltBreaker;
+											}
+											var ii = ii + 1;
+										
+											}}}
+											
+						
+					//hbp
+							if(Lore.search("§e\\(") !== -1){
+								var HPBlength = Lore.search("§e\\(");
+								var stats = (Lore.substring(HPBlength+4,HPBlength+6).replace(")",""))/2;
+								
+									if(stats >10){
+									HPB = (stats % 10) * 990 + 500;                              //FHPB weight
+									}
+									else{
+									HPB = stats*50;
+									}	}
+		
+					
+					}
+					}
+					if(iType === "armor"){ 
+						var VI = 0;
+						var VII = 0;
+						
+						
+							if(Lore.search("VII") !== -1){
+								var VII =  Lore.match(/(VII)/g).length;
+								var ii = 0;
+								
+									for(var f; f < VIIenchants.length; f++
+									){
+										
+										 var search = Lore.search(VIIenchants[ii]);
+                                if (search !== -1) {
+									iEnchants[iEnchants.length] = VIIenchants[ii];
+									enchantWeight += VIIenchantsWeight[ii];
+									aVIenchants.splice(ii, ii);
+									aVIenchantsWeight.splice(ii, ii);
+                                   
+                                }
+								ii = ii +1;
+								
+									}}
+							
+							if(Lore.search("VI") !== -1){
+								var VI = Lore.match(/(VI)/g).length - VII;
+								var ii = 0;
+								
+								for(var f; f < aVIenchants.length; f++
+								){
+						 var search = Lore.search(aVIenchants[ii]);
+                                if (search !== -1) {
+									iEnchants[iEnchants.length] = aVIenchants[ii];
+									enchantWeight += aVIenchantsWeight[ii];
+									}
+									ii = ii +1;}
+						
+					}
+					//Ultimates
+						if(Lore.search("§d§l") !== -1){
+									var ii = 0;
+								
+									aUltBreaker:{
+										while(ii < 5){
+											var search = Lore.search(aUlts[ii]);
+											if (search !== -1) {
+												var UEname = aUlts[ii];
+												var UltNum = 0;
+												
+												var ELength = UEname.length
+													var UEdata = (Lore.substring(search+ELength+1,search+ELength+4).replace(",","").replace("§","").replace(" ",""))  //match reslut to weight array 
+													
+													
+												if(UEdata === "IV"){ UltNum = 3;}
+												if(UEdata === "II"){ UltNum = 1;}
+												if(UEdata === "III"){ UltNum = 2;}
+												if(UEdata === "V"){ UltNum = 4;}
+												if(UEdata === "I"){ UltNum = 0;}
+												
+												
+												var why = (Math.pow(2,UltNum))*aUltsWeight[ii];
+													enchantWeight += why;  //match reslut to weight array 
+													if(UEname === "Legion"){}
+												iEnchants[iEnchants.length] = UEname.concat(" ",UEdata);
+												break aUltBreaker;
+												}
+												var ii = ii + 1;
+											
+												}}}
+												
+					//hpb
+							if(Lore.search("§e\\(") !== -1){
+								var HPBlength = Lore.search("§e\\(");
+								var stats = (Lore.substring(HPBlength+4,HPBlength+6).replace(")",""))/4;
+									if(stats >10){
+									HPB = (stats % 10) * 990 + 500;                              //FHPB weight
+									}
+									else{
+									HPB = stats*50;
+									}	}
+		
+					}
+					
+					
+					var lWeight = HPB + (recomm*5000) + enchantWeight;
+					var tWeight = Item.starting_bid;
+					
+					
+
+
+                    //Adding to arrays
+                    //Items[Items.length] = Auc[i].item_name.concat(Auc[i].starting_bid);   //Adds Items to array
+                    var result = -1;
+                    for (var j = 0, len = Items.length; j < len; j++) {
+
+                        if (Items[j][0][0] === iName) {
+                            result = Items[j];
+                            j = 99999;
+                        }
+                    }
+
+                    if (result === -1) {
+                        Items[Items.length] = [
+                            [iName, lWeight, tWeight, iStar, iReforge, iEnchants,HPB,recomm,enchantWeight, uuid]
+                        ];
+
+                    }
+                    else {
+
+                        result[result.length] = [iName, lWeight, tWeight, iStar, iReforge, iEnchants,HPB,recomm,enchantWeight, uuid];
+                        //sorting here
+
+                    }
+                }
+            }
+            catch (err) { //catch
+
+               i = 99999;
+            }
+            i = i + 1;
+        }
+    }
+
+    for (var k = 0; k < Items.length; k++) {
+        Items[k].splice(1, 1);
+		 Items[k].sort(function(a, b){return a[2] - b[2]});
+		 //console.log(Items[k]);
+		searchSort(k);
+    }
+    
+	
+	run();
+}
+
+
+//prints all the items data in catagory 
+function click(i) {
+    var here = document.getElementById(i.id);
+	 here.innerHTML = "";
+
+	
+	for(var j = 0; j <  flipData[i.id].length; j++){
+    here.innerHTML = here.innerHTML.concat("<p id='S".concat(j,"List",i.id,"'>"),flipData[i.id][j],"<button type='button' id ='".concat(j,"Item",i.id,"' onclick='getItem(this,",i.id,",",j,")'>Get UUID</button></p>") ); //visulization here
+}
+    console.log(here);
+}
+
+
+//gets and displays uuid of one item
+async function getItem(i,j,k) {
+console.log(i);
+var itemID = i.id;
+
+var uuid = flipData[j][k][1][9];
+
+ var raw = await fetch("https://playerdb.co/api/player/minecraft/".concat(uuid));
+        var d = await raw.json();
+		var Username = d.data.player.username;
+		flipData[j][k][1][9] = Username;
+		var replace = document.getElementById("S".concat(k,"List",j)).innerHTML = flipData[j][k];
+		
+}
+
+
+
+</script>
+
+</HTML>
